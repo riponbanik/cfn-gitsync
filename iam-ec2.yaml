@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: StackSet to create an EC2 Support IAM Role across multiple accounts
+
+Parameters:
+  AccountIds:
+    Type: List<String>
+    Description: 'List of AWS account IDs to deploy the stackset to.'
+  OU:
+    Type: String  
+    Description: Organization Unit
+
+Resources:
+  Stackset:
+    Type: AWS::CloudFormation::StackSet
+    Properties:      
+      StackSetName: !Join 
+             -  '-' 
+             - - 'stackset'
+               - !Sub ${AWS::StackName}
+             
+      CallAs: DELEGATED_ADMIN
+      PermissionModel: SERVICE_MANAGED
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      StackInstancesGroup:
+        - Regions:
+          - !Ref AWS::Region
+          DeploymentTargets:
+            AccountFilterType: INTERSECTION
+            OrganizationalUnitIds:
+              - !Ref OU
+            Accounts: !Ref AccountIds
+      TemplateBody: |
+        AWSTemplateFormatVersion: 2010-09-09
+        Description: This CloudFormation template to create an IAM Role
+        Resources:
+           IAMRole:
+            Type: 'AWS::IAM::Role'
+            Properties:
+              AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: 'Allow'
+                    Action: 'sts:AssumeRole'
+                    Principal:
+                      Service: 'ec2.amazonaws.com'  
+              Path: '/'
+              RoleName: 'EC2SupportTole'
+              Policies:
+                - PolicyName: 'EC2SupportRolePolicy'
+                  PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                      - Effect: 'Allow'
+                        Action:
+                          - 'ec2:DescribeInstances'
+                          - 'ec2:StartInstances'
+                          - 'ec2:StopInstances'
+                        Resource: '*'  
+    
+
