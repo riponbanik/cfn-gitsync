@@ -1,0 +1,7 @@
+template-file-path: ./iam-ec2.yaml
+parameters: 
+    AccountIds: [ '1234567890' ]
+    OU: ou-xxxx
+tags:
+    cost-center: '123456'
+    
